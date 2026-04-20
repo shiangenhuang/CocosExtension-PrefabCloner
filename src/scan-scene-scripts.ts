@@ -96,6 +96,8 @@ export interface ScriptReference {
     relativePath: string;
     /** Whether this script is inside the bundle folder */
     isInBundle: boolean;
+    /** Scene/prefab file(s) where this script was found */
+    foundIn: string[];
 }
 
 export interface ScanResult {
@@ -262,6 +264,8 @@ export function scanSceneScripts(
 
     // ── Scan files ───────────────────────────────────────────────────────
     const resolvedScripts: Record<string, ScriptReference> = {};
+    // Track which file each script was found in (keyed by resolved script path)
+    const scriptFoundIn: Record<string, Set<string>> = {};
     const scannedFiles = new Set<string>();
     const pendingFiles = [...filesToScan];
 
@@ -309,12 +313,19 @@ export function scanSceneScripts(
             // If resolved, record it
             if (scriptPath) {
                 const resolvedPath = path.resolve(scriptPath);
-                resolvedScripts[typeKey] = {
-                    typeKey,
-                    scriptFilePath: scriptPath,
-                    relativePath: path.relative(projectRoot, scriptPath),
-                    isInBundle: resolvedPath.startsWith(normalizedBundle),
-                };
+                const sourceFile = path.basename(filePath);
+                if (!resolvedScripts[typeKey]) {
+                    resolvedScripts[typeKey] = {
+                        typeKey,
+                        scriptFilePath: scriptPath,
+                        relativePath: path.relative(projectRoot, scriptPath),
+                        isInBundle: resolvedPath.startsWith(normalizedBundle),
+                        foundIn: [],
+                    };
+                }
+                // Track which file(s) reference this script
+                if (!scriptFoundIn[resolvedPath]) scriptFoundIn[resolvedPath] = new Set();
+                scriptFoundIn[resolvedPath].add(sourceFile);
             }
 
             // ── Follow prefab references for recursive scanning ──────
@@ -344,6 +355,7 @@ export function scanSceneScripts(
         const key = path.resolve(s.scriptFilePath);
         if (seenPaths.has(key)) continue;
         seenPaths.add(key);
+        s.foundIn = [...(scriptFoundIn[key] || [])];
         allScripts.push(s);
     }
     const inBundle = allScripts.filter(s => s.isInBundle);
@@ -358,7 +370,8 @@ export function scanSceneScripts(
         console.log('');
         console.log('── Scripts outside bundle: ──');
         for (const s of missing) {
-            console.log(`   ❌ ${s.relativePath}`);
+            const from = s.foundIn.length > 0 ? ` (from: ${s.foundIn.join(', ')})` : '';
+            console.log(`   ❌ ${s.relativePath}${from}`);
         }
     }
 

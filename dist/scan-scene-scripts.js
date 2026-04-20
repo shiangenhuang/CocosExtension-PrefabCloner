@@ -241,6 +241,8 @@ function scanSceneScripts(targetPath, bundleFolder, projectRoot) {
     console.log(`   ${Object.keys(classNameMap).length} class names, ${Object.keys(uuidMap).length} script UUIDs`);
     // ── Scan files ───────────────────────────────────────────────────────
     const resolvedScripts = {};
+    // Track which file each script was found in (keyed by resolved script path)
+    const scriptFoundIn = {};
     const scannedFiles = new Set();
     const pendingFiles = [...filesToScan];
     while (pendingFiles.length > 0) {
@@ -288,12 +290,20 @@ function scanSceneScripts(targetPath, bundleFolder, projectRoot) {
             // If resolved, record it
             if (scriptPath) {
                 const resolvedPath = path.resolve(scriptPath);
-                resolvedScripts[typeKey] = {
-                    typeKey,
-                    scriptFilePath: scriptPath,
-                    relativePath: path.relative(projectRoot, scriptPath),
-                    isInBundle: resolvedPath.startsWith(normalizedBundle),
-                };
+                const sourceFile = path.basename(filePath);
+                if (!resolvedScripts[typeKey]) {
+                    resolvedScripts[typeKey] = {
+                        typeKey,
+                        scriptFilePath: scriptPath,
+                        relativePath: path.relative(projectRoot, scriptPath),
+                        isInBundle: resolvedPath.startsWith(normalizedBundle),
+                        foundIn: [],
+                    };
+                }
+                // Track which file(s) reference this script
+                if (!scriptFoundIn[resolvedPath])
+                    scriptFoundIn[resolvedPath] = new Set();
+                scriptFoundIn[resolvedPath].add(sourceFile);
             }
             // ── Follow prefab references for recursive scanning ──────
             const jsonStr = JSON.stringify(entry);
@@ -322,6 +332,7 @@ function scanSceneScripts(targetPath, bundleFolder, projectRoot) {
         if (seenPaths.has(key))
             continue;
         seenPaths.add(key);
+        s.foundIn = [...(scriptFoundIn[key] || [])];
         allScripts.push(s);
     }
     const inBundle = allScripts.filter(s => s.isInBundle);
@@ -334,7 +345,8 @@ function scanSceneScripts(targetPath, bundleFolder, projectRoot) {
         console.log('');
         console.log('── Scripts outside bundle: ──');
         for (const s of missing) {
-            console.log(`   ❌ ${s.relativePath}`);
+            const from = s.foundIn.length > 0 ? ` (from: ${s.foundIn.join(', ')})` : '';
+            console.log(`   ❌ ${s.relativePath}${from}`);
         }
     }
     console.log('═══════════════════════════════════════════════');

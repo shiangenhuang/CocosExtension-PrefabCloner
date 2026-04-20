@@ -182,7 +182,8 @@ async function showScanResult(result: ReturnType<typeof scanSceneScripts>) {
     let msg = `❌ ${missing.length} script(s) outside bundle:\n\n`;
     for (let i = 0; i < missing.length; i++) {
         const num = String(i + 1).padStart(2);
-        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}\n`;
+        const from = missing[i].foundIn?.length > 0 ? `  (from: ${missing[i].foundIn.join(', ')})` : '';
+        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}${from}\n`;
     }
     msg += `\n✅ ${inBundle.length} scripts are in bundle`;
 

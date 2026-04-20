@@ -19,7 +19,9 @@ const missing = result.scriptsMissing || [];
 if (missing.length > 0) {
     console.log('\nScripts outside bundle:');
     missing.forEach((s, i) => {
-        console.log(`${String(i + 1).padStart(2)}. ${s.relativePath.replace(/\\/g, '/')}`);
+        var _a;
+        const from = ((_a = s.foundIn) === null || _a === void 0 ? void 0 : _a.length) > 0 ? `  (from: ${s.foundIn.join(', ')})` : '';
+        console.log(`${String(i + 1).padStart(2)}. ${s.relativePath.replace(/\\/g, '/')}${from}`);
     });
 }
 process.exit(0);

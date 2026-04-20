@@ -128,7 +128,7 @@ exports.methods = {
 };
 // ─── Result Dialog ───────────────────────────────────────────────────────────
 async function showScanResult(result) {
-    var _a;
+    var _a, _b;
     if (!result.success) {
         await Editor.Dialog.error(`❌ ${result.error}`, { title: 'Script Scanner' });
         return;
@@ -144,7 +144,8 @@ async function showScanResult(result) {
     let msg = `❌ ${missing.length} script(s) outside bundle:\n\n`;
     for (let i = 0; i < missing.length; i++) {
         const num = String(i + 1).padStart(2);
-        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}\n`;
+        const from = ((_b = missing[i].foundIn) === null || _b === void 0 ? void 0 : _b.length) > 0 ? `  (from: ${missing[i].foundIn.join(', ')})` : '';
+        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}${from}\n`;
     }
     msg += `\n✅ ${inBundle.length} scripts are in bundle`;
     await Editor.Dialog.warn(msg, { title: 'Script Scanner' });
