@@ -290,7 +290,15 @@ function scanSceneScripts(targetPath, bundleFolder, projectRoot) {
             // If resolved, record it
             if (scriptPath) {
                 const resolvedPath = path.resolve(scriptPath);
-                const sourceFile = path.basename(filePath);
+                const sourceFile = path.relative(projectRoot, filePath).replace(/\\/g, '/');
+                // Resolve the node name that owns this component
+                let nodeName = '?';
+                if (entry.node && typeof entry.node.__id__ === 'number') {
+                    const nodeEntry = data[entry.node.__id__];
+                    if (nodeEntry && nodeEntry._name) {
+                        nodeName = nodeEntry._name;
+                    }
+                }
                 if (!resolvedScripts[typeKey]) {
                     resolvedScripts[typeKey] = {
                         typeKey,
@@ -300,10 +308,10 @@ function scanSceneScripts(targetPath, bundleFolder, projectRoot) {
                         foundIn: [],
                     };
                 }
-                // Track which file(s) reference this script
+                // Track which file(s) and node(s) reference this script
                 if (!scriptFoundIn[resolvedPath])
                     scriptFoundIn[resolvedPath] = new Set();
-                scriptFoundIn[resolvedPath].add(sourceFile);
+                scriptFoundIn[resolvedPath].add(`${sourceFile} > ${nodeName}`);
             }
             // ── Follow prefab references for recursive scanning ──────
             const jsonStr = JSON.stringify(entry);
