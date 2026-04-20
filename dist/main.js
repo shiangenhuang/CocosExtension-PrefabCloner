@@ -1,8 +1,32 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.unload = exports.load = exports.methods = void 0;
 const clone_prefab_1 = require("./clone-prefab");
 const scan_scene_scripts_1 = require("./scan-scene-scripts");
+const path = __importStar(require("path"));
 /**
  * Extension methods registered for IPC messages
  */
@@ -128,7 +152,7 @@ exports.methods = {
 };
 // ─── Result Dialog ───────────────────────────────────────────────────────────
 async function showScanResult(result) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     if (!result.success) {
         await Editor.Dialog.error(`❌ ${result.error}`, { title: 'Script Scanner' });
         return;
@@ -140,14 +164,36 @@ async function showScanResult(result) {
             `Files scanned: ${((_a = result.scannedFiles) === null || _a === void 0 ? void 0 : _a.length) || 0}`, { title: 'Script Scanner' });
         return;
     }
-    // Build a clean numbered list with forward slashes
-    let msg = `❌ ${missing.length} script(s) outside bundle:\n\n`;
+    // ── Build report text ────────────────────────────────────────────────
+    const lines = [];
+    lines.push(`Script Scanner Report`);
+    lines.push(`Generated: ${new Date().toISOString()}`);
+    lines.push(`Bundle: ${((_b = result.bundlePath) === null || _b === void 0 ? void 0 : _b.replace(/\\/g, '/')) || '?'}`);
+    lines.push(`Files scanned: ${((_c = result.scannedFiles) === null || _c === void 0 ? void 0 : _c.length) || 0}`);
+    lines.push(`Scripts in bundle: ${inBundle.length}`);
+    lines.push(`Scripts outside bundle: ${missing.length}`);
+    lines.push('');
+    lines.push('─── Scripts Outside Bundle ───');
+    lines.push('');
     for (let i = 0; i < missing.length; i++) {
         const num = String(i + 1).padStart(2);
-        const from = ((_b = missing[i].foundIn) === null || _b === void 0 ? void 0 : _b.length) > 0 ? `  (from: ${missing[i].foundIn.join(', ')})` : '';
-        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}${from}\n`;
+        const scriptPath = missing[i].relativePath.replace(/\\/g, '/');
+        const from = ((_d = missing[i].foundIn) === null || _d === void 0 ? void 0 : _d.length) > 0 ? missing[i].foundIn.join(', ') : '?';
+        lines.push(`${num}. ${scriptPath}`);
+        lines.push(`    from: ${from}`);
+        lines.push('');
     }
-    msg += `\n✅ ${inBundle.length} scripts are in bundle`;
+    const reportText = lines.join('\n');
+    // ── Write report file ────────────────────────────────────────────────
+    const fs = require('fs');
+    const reportPath = path.join(Editor.Project.path, 'script-scan-report.txt');
+    fs.writeFileSync(reportPath, reportText, 'utf8');
+    // ── Console log (copyable from Cocos Console) ────────────────────────
+    console.log('\n' + reportText);
+    // ── Dialog summary ───────────────────────────────────────────────────
+    let msg = `❌ ${missing.length} script(s) outside bundle\n`;
+    msg += `✅ ${inBundle.length} scripts in bundle\n\n`;
+    msg += `📄 Report saved to:\n${reportPath}`;
     await Editor.Dialog.warn(msg, { title: 'Script Scanner' });
 }
 /**

@@ -178,14 +178,41 @@ async function showScanResult(result: ReturnType<typeof scanSceneScripts>) {
         return;
     }
 
-    // Build a clean numbered list with forward slashes
-    let msg = `❌ ${missing.length} script(s) outside bundle:\n\n`;
+    // ── Build report text ────────────────────────────────────────────────
+    const lines: string[] = [];
+    lines.push(`Script Scanner Report`);
+    lines.push(`Generated: ${new Date().toISOString()}`);
+    lines.push(`Bundle: ${result.bundlePath?.replace(/\\/g, '/') || '?'}`);
+    lines.push(`Files scanned: ${result.scannedFiles?.length || 0}`);
+    lines.push(`Scripts in bundle: ${inBundle.length}`);
+    lines.push(`Scripts outside bundle: ${missing.length}`);
+    lines.push('');
+    lines.push('─── Scripts Outside Bundle ───');
+    lines.push('');
+
     for (let i = 0; i < missing.length; i++) {
         const num = String(i + 1).padStart(2);
-        const from = missing[i].foundIn?.length > 0 ? `  (from: ${missing[i].foundIn.join(', ')})` : '';
-        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}${from}\n`;
+        const scriptPath = missing[i].relativePath.replace(/\\/g, '/');
+        const from = missing[i].foundIn?.length > 0 ? missing[i].foundIn.join(', ') : '?';
+        lines.push(`${num}. ${scriptPath}`);
+        lines.push(`    from: ${from}`);
+        lines.push('');
     }
-    msg += `\n✅ ${inBundle.length} scripts are in bundle`;
+
+    const reportText = lines.join('\n');
+
+    // ── Write report file ────────────────────────────────────────────────
+    const fs = require('fs');
+    const reportPath = path.join(Editor.Project.path, 'script-scan-report.txt');
+    fs.writeFileSync(reportPath, reportText, 'utf8');
+
+    // ── Console log (copyable from Cocos Console) ────────────────────────
+    console.log('\n' + reportText);
+
+    // ── Dialog summary ───────────────────────────────────────────────────
+    let msg = `❌ ${missing.length} script(s) outside bundle\n`;
+    msg += `✅ ${inBundle.length} scripts in bundle\n\n`;
+    msg += `📄 Report saved to:\n${reportPath}`;
 
     await Editor.Dialog.warn(msg, { title: 'Script Scanner' });
 }
