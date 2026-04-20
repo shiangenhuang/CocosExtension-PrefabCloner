@@ -1,32 +1,8 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.unload = exports.load = exports.methods = void 0;
 const clone_prefab_1 = require("./clone-prefab");
 const scan_scene_scripts_1 = require("./scan-scene-scripts");
-const path = __importStar(require("path"));
 /**
  * Extension methods registered for IPC messages
  */
@@ -98,131 +74,80 @@ exports.methods = {
             await Editor.Dialog.error(`❌ Unexpected error:\n${err.message || err}`, { title: 'Prefab Cloner' });
         }
     },
-    // ─── Scan Single Scene / Prefab ──────────────────────────────────────────
+    // ─── Scan Single Scene / Prefab ──────────────────────────────────────
     async scanScene() {
         try {
-            // Step 1: Let user pick a .scene or .prefab file
             const fileResult = await Editor.Dialog.select({
-                title: '① 選擇場景或 Prefab 檔案 (Select Scene or Prefab)',
+                title: '① 選擇場景或 Prefab (Select Scene or Prefab)',
                 path: Editor.Project.path + '/assets',
                 type: 'file',
                 filters: [{ name: 'Scene/Prefab', extensions: ['scene', 'prefab'] }],
             });
             if (fileResult.canceled || !fileResult.filePaths || fileResult.filePaths.length === 0) {
-                console.log('[Scene Script Scanner] Cancelled by user.');
+                console.log('[Script Scanner] Cancelled.');
                 return;
             }
-            const sceneFilePath = fileResult.filePaths[0];
-            // Step 2: Let user pick the bundle folder to check against
             const bundleResult = await Editor.Dialog.select({
-                title: '② 選擇 Bundle 資料夾 (Select Bundle Folder to Check Against)',
+                title: '② 選擇 Bundle 資料夾 (Select Bundle Folder)',
                 path: Editor.Project.path + '/assets',
                 type: 'directory',
             });
             if (bundleResult.canceled || !bundleResult.filePaths || bundleResult.filePaths.length === 0) {
-                console.log('[Scene Script Scanner] Cancelled by user.');
+                console.log('[Script Scanner] Cancelled.');
                 return;
             }
-            const bundleFolder = bundleResult.filePaths[0];
-            // Step 3: Run the scan
-            console.log('[Scene Script Scanner] Starting scan...');
-            const result = (0, scan_scene_scripts_1.scanSceneScripts)(sceneFilePath, bundleFolder, Editor.Project.path, {
-                recursive: true,
-            });
-            // Step 4: Save report
-            if (result.success) {
-                const reportPath = path.join(Editor.Project.path, 'script-scan-report.json');
-                (0, scan_scene_scripts_1.writeScanReport)(result, reportPath);
-            }
-            // Step 5: Show result dialog
-            await showScanResultDialog(result);
+            const result = (0, scan_scene_scripts_1.scanSceneScripts)(fileResult.filePaths[0], bundleResult.filePaths[0], Editor.Project.path);
+            await showScanResult(result);
         }
         catch (err) {
-            console.error('[Scene Script Scanner] Error:', err);
-            await Editor.Dialog.error(`❌ Unexpected error:\n${err.message || err}`, { title: 'Scene Script Scanner' });
+            console.error('[Script Scanner] Error:', err);
+            await Editor.Dialog.error(`❌ Error:\n${err.message || err}`, { title: 'Script Scanner' });
         }
     },
-    // ─── Scan Entire Bundle ──────────────────────────────────────────────────
+    // ─── Scan Entire Bundle ──────────────────────────────────────────────
     async scanBundle() {
         try {
-            // Step 1: Let user pick the bundle folder
             const bundleResult = await Editor.Dialog.select({
-                title: '選擇要掃描的 Bundle 資料夾 (Select Bundle Folder to Scan)',
+                title: '選擇要掃描的 Bundle 資料夾 (Select Bundle Folder)',
                 path: Editor.Project.path + '/assets',
                 type: 'directory',
             });
             if (bundleResult.canceled || !bundleResult.filePaths || bundleResult.filePaths.length === 0) {
-                console.log('[Scene Script Scanner] Cancelled by user.');
+                console.log('[Script Scanner] Cancelled.');
                 return;
             }
-            const bundleFolder = bundleResult.filePaths[0];
-            // Step 2: Run the scan (directory mode — scans ALL .scene/.prefab in the folder)
-            console.log('[Scene Script Scanner] Starting bundle-wide scan...');
-            const result = (0, scan_scene_scripts_1.scanSceneScripts)(bundleFolder, bundleFolder, Editor.Project.path, {
-                recursive: true,
-            });
-            // Step 3: Save report
-            if (result.success) {
-                const bundleName = path.basename(bundleFolder);
-                const reportPath = path.join(Editor.Project.path, `script-scan-report-${bundleName}.json`);
-                (0, scan_scene_scripts_1.writeScanReport)(result, reportPath);
-            }
-            // Step 4: Show result dialog
-            await showScanResultDialog(result);
+            const folder = bundleResult.filePaths[0];
+            const result = (0, scan_scene_scripts_1.scanSceneScripts)(folder, folder, Editor.Project.path);
+            await showScanResult(result);
         }
         catch (err) {
-            console.error('[Scene Script Scanner] Error:', err);
-            await Editor.Dialog.error(`❌ Unexpected error:\n${err.message || err}`, { title: 'Scene Script Scanner' });
+            console.error('[Script Scanner] Error:', err);
+            await Editor.Dialog.error(`❌ Error:\n${err.message || err}`, { title: 'Script Scanner' });
         }
     },
 };
-// ─── Shared Dialog Helper ────────────────────────────────────────────────────
-async function showScanResultDialog(result) {
-    var _a;
+// ─── Result Dialog ───────────────────────────────────────────────────────────
+async function showScanResult(result) {
+    var _a, _b;
     if (!result.success) {
-        await Editor.Dialog.error(`❌ Scan failed:\n${result.error}`, { title: 'Scene Script Scanner' });
+        await Editor.Dialog.error(`❌ ${result.error}`, { title: 'Script Scanner' });
         return;
     }
-    const scripts = result.scripts || [];
-    const missing = scripts.filter(s => !s.isInBundle && s.scriptFilePath !== null);
-    const notFound = scripts.filter(s => s.scriptFilePath === null);
-    // Build dialog message
-    let msg = `📊 Scan Complete\n\n`;
-    msg += `Files scanned:     ${((_a = result.scannedFiles) === null || _a === void 0 ? void 0 : _a.length) || 0}\n`;
-    msg += `Unique scripts:    ${result.uniqueScripts}\n`;
-    msg += `✅ In bundle:      ${result.scriptsInBundle}\n`;
-    msg += `❌ Outside bundle: ${result.scriptsMissing}\n`;
-    msg += `⚠️ Not found:      ${result.scriptsNotFound}\n`;
-    if (missing.length > 0) {
-        msg += `\n── Scripts OUTSIDE Bundle ──\n`;
-        for (const s of missing) {
-            msg += `\n❌ ${s.relativePath}`;
-            if (s.bundleLocation) {
-                msg += `  (in: ${s.bundleLocation})`;
-            }
-            msg += `\n   Nodes: ${s.nodeNames.slice(0, 5).join(', ')}`;
-            if (s.nodeNames.length > 5)
-                msg += ` (+${s.nodeNames.length - 5} more)`;
-        }
+    const missing = result.scriptsMissing || [];
+    const inBundle = result.scriptsInBundle || [];
+    if (missing.length === 0) {
+        await Editor.Dialog.info(`🎉 All ${inBundle.length} scripts are inside the bundle!\n\n` +
+            `Files scanned: ${((_a = result.scannedFiles) === null || _a === void 0 ? void 0 : _a.length) || 0}`, { title: 'Script Scanner' });
+        return;
     }
-    if (notFound.length > 0) {
-        msg += `\n\n── Scripts NOT FOUND ──\n`;
-        for (const s of notFound) {
-            msg += `\n⚠️ ${s.compressedType}`;
-            msg += ` → ${s.decompressedUUID}`;
-            msg += `\n   Nodes: ${s.nodeNames.slice(0, 5).join(', ')}`;
-            if (s.nodeNames.length > 5)
-                msg += ` (+${s.nodeNames.length - 5} more)`;
-        }
+    // Build a clean list of missing script paths
+    let msg = `❌ ${missing.length} script(s) outside bundle:\n`;
+    for (let i = 0; i < missing.length; i++) {
+        msg += `\n${i + 1}. ${missing[i].relativePath}`;
     }
-    msg += `\n\n📝 Full report saved to project root.`;
-    msg += `\n📋 See Console for detailed output.`;
-    if (missing.length > 0 || notFound.length > 0) {
-        await Editor.Dialog.warn(msg, { title: 'Scene Script Scanner' });
-    }
-    else {
-        await Editor.Dialog.info(msg + `\n\n🎉 All scripts are inside the bundle!`, { title: 'Scene Script Scanner' });
-    }
+    msg += `\n\n(✅ ${inBundle.length} scripts are in bundle)`;
+    msg += `\nFiles scanned: ${((_b = result.scannedFiles) === null || _b === void 0 ? void 0 : _b.length) || 0}`;
+    await Editor.Dialog.warn(msg, { title: 'Script Scanner' });
 }
 /**
  * Hooks triggered after extension loading is complete
