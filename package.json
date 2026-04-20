@@ -1,9 +1,9 @@
 {
     "package_version": 2,
-    "version": "1.0.0",
+    "version": "1.1.0",
     "name": "prefab-cloner",
-    "title": "Prefab Cloner",
-    "description": "Clone prefab across bundles with UUID regeneration",
+    "title": "Prefab Cloner & Script Scanner",
+    "description": "Clone prefab across bundles with UUID regeneration & scan scenes for missing script references",
     "main": "./dist/main.js",
     "devDependencies": {
         "@types/node": "^16.0.1",
@@ -21,12 +21,32 @@
                 "path": "Prefab Cloner",
                 "label": "Clone Prefab to Folder",
                 "message": "clone-prefab"
+            },
+            {
+                "path": "Prefab Cloner",
+                "label": "Scan Scene/Prefab Scripts",
+                "message": "scan-scene"
+            },
+            {
+                "path": "Prefab Cloner",
+                "label": "Scan Entire Bundle Scripts",
+                "message": "scan-bundle"
             }
         ],
         "messages": {
             "clone-prefab": {
                 "methods": [
                     "clonePrefab"
+                ]
+            },
+            "scan-scene": {
+                "methods": [
+                    "scanScene"
+                ]
+            },
+            "scan-bundle": {
+                "methods": [
+                    "scanBundle"
                 ]
             }
         }
