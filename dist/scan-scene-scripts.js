@@ -314,8 +314,16 @@ function scanSceneScripts(targetPath, bundleFolder, projectRoot) {
             }
         }
     }
-    // ── Categorize ───────────────────────────────────────────────────────
-    const allScripts = Object.values(resolvedScripts);
+    // ── Deduplicate by file path & categorize ────────────────────────────
+    const seenPaths = new Set();
+    const allScripts = [];
+    for (const s of Object.values(resolvedScripts)) {
+        const key = path.resolve(s.scriptFilePath);
+        if (seenPaths.has(key))
+            continue;
+        seenPaths.add(key);
+        allScripts.push(s);
+    }
     const inBundle = allScripts.filter(s => s.isInBundle);
     const missing = allScripts.filter(s => !s.isInBundle);
     // ── Console output ───────────────────────────────────────────────────
