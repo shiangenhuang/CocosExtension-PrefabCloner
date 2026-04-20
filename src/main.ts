@@ -178,13 +178,13 @@ async function showScanResult(result: ReturnType<typeof scanSceneScripts>) {
         return;
     }
 
-    // Build a clean list of missing script paths
-    let msg = `❌ ${missing.length} script(s) outside bundle:\n`;
+    // Build a clean numbered list with forward slashes
+    let msg = `❌ ${missing.length} script(s) outside bundle:\n\n`;
     for (let i = 0; i < missing.length; i++) {
-        msg += `\n${i + 1}. ${missing[i].relativePath}`;
+        const num = String(i + 1).padStart(2);
+        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}\n`;
     }
-    msg += `\n\n(✅ ${inBundle.length} scripts are in bundle)`;
-    msg += `\nFiles scanned: ${result.scannedFiles?.length || 0}`;
+    msg += `\n✅ ${inBundle.length} scripts are in bundle`;
 
     await Editor.Dialog.warn(msg, { title: 'Script Scanner' });
 }

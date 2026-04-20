@@ -128,7 +128,7 @@ exports.methods = {
 };
 // ─── Result Dialog ───────────────────────────────────────────────────────────
 async function showScanResult(result) {
-    var _a, _b;
+    var _a;
     if (!result.success) {
         await Editor.Dialog.error(`❌ ${result.error}`, { title: 'Script Scanner' });
         return;
@@ -140,13 +140,13 @@ async function showScanResult(result) {
             `Files scanned: ${((_a = result.scannedFiles) === null || _a === void 0 ? void 0 : _a.length) || 0}`, { title: 'Script Scanner' });
         return;
     }
-    // Build a clean list of missing script paths
-    let msg = `❌ ${missing.length} script(s) outside bundle:\n`;
+    // Build a clean numbered list with forward slashes
+    let msg = `❌ ${missing.length} script(s) outside bundle:\n\n`;
     for (let i = 0; i < missing.length; i++) {
-        msg += `\n${i + 1}. ${missing[i].relativePath}`;
+        const num = String(i + 1).padStart(2);
+        msg += `${num}. ${missing[i].relativePath.replace(/\\/g, '/')}\n`;
     }
-    msg += `\n\n(✅ ${inBundle.length} scripts are in bundle)`;
-    msg += `\nFiles scanned: ${((_b = result.scannedFiles) === null || _b === void 0 ? void 0 : _b.length) || 0}`;
+    msg += `\n✅ ${inBundle.length} scripts are in bundle`;
     await Editor.Dialog.warn(msg, { title: 'Script Scanner' });
 }
 /**

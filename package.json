@@ -13,7 +13,10 @@
     "editor": ">=3.8.1",
     "scripts": {
         "build": "tsc -b",
-        "watch": "tsc -w"
+        "watch": "tsc -w",
+        "test": "node dist/test-scan.js",
+        "scan": "node dist/cli-scan.js",
+        "scan:test": "node dist/cli-scan.js D:/Github_igs/partygo-client/assets/games/newbiePractice/scene/test.scene D:/Github_igs/partygo-client/assets/games/newbiePractice D:/Github_igs/partygo-client"
     },
     "contributions": {
         "menu": [
